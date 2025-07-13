@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مساعد الحقن الطبي</title>
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.10"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Error Boundary Component
+    const ErrorBoundary = ({ children }) => {
+      const [hasError, setHasError] = useState(false);
+      useEffect(() => {
+        setHasError(false);
+      }, []);
+      if (hasError) {
+        return <div className="text-danger-color text-center p-4">حدث خطأ، يرجى إعادة تحميل الصفحة</div>;
+      }
+      return children;
+    };
+
+    // MyForm Component
+    const MyForm = ({ buttText, inputArr, title, type, handleSub }) => {
+      const [formValues, setFormValues] = useState({});
+      const [errors, setErrors] = useState({});
+
+      const handleChange = (e) => {
+        const { name, value, type: inputType } = e.target;
+        setFormValues({ ...formValues, [name]: inputType === 'radio' ? value : value });
+        if (value.trim() === '' && inputType !== 'radio') {
+          setErrors({ ...errors, [name]: 'هذا الحقل مطلوب' });
+        } else if (inputType === 'number' && (isNaN(value) || Number(value) <= 0)) {
+          setErrors({ ...errors, [name]: 'الرجاء إدخال قيمة عددية صحيحة' });
+        } else {
+          setErrors({ ...errors, [name]: '' });
+        }
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const newErrors = {};
+        inputArr.forEach((input) => {
+          if (!formValues[input.name] && input.type !== 'radio') {
+            newErrors[input.name] = 'هذا الحقل مطلوب';
+          } else if (input.type === 'number' && (isNaN(formValues[input.name]) || Number(formValues[input.name]) <= 0)) {
+            newErrors[input.name] = 'الرجاء إدخال قيمة عددية صحيحة';
+          }
+        });
+        setErrors(newErrors);
+        if (Object.values(newErrors).every((error) => !error)) {
+          try {
+            handleSub(formValues, Object.keys(newErrors).length > 0);
+          } catch (error) {
+            console.error('Form submission error:', error);
+            setErrors({ general: 'حدث خطأ أثناء الحساب، يرجى التحقق من المدخلات' });
+          }
+        }
+      };
+
+      return (
+        <div className="calculator-container">
+          <h2>{title}</h2>
+          <form className="medical-form" onSubmit={handleSubmit}>
+            <div className="form-row">
+              {inputArr.map((input) => (
+                <div key={input.name} className="form-group">
+                  <label>{input.label}</label>
+                  {input.type === 'radio' ? (
+                    <div className="flex gap-4">
+                      <label>
+                        <input
+                          type="radio"
+                          name={input.name}
+                          value={input.radioOne}
+                          onChange={handleChange}
+                          checked={formValues[input.name] === input.radioOne}
+                        />
+                        {input.radioOne}
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name={input.name}
+                          value={input.radioTwo}
+                          onChange={handleChange}
+                          checked={formValues[input.name] === input.radioTwo}
+                        />
+                        {input.radioTwo}
+                      </label>
+                    </div>
+                  ) : (
+                    <input
+                      type={input.type}
+                      name={input.name}
+                      value={formValues[input.name] || ''}
+                      onChange={handleChange}
+                      style={input.style || {}}
+                    />
+                  )}
+                  {errors[input.name] && <span className="text-danger-color text-sm">{errors[input.name]}</span>}
+                </div>
+              ))}
+            </div>
+            {errors.general && <div className="text-danger-color text-center mb-4">{errors.general}</div>}
+            <button type="submit" className="calculate-btn">{buttText}</button>
+          </form>
+        </div>
+      );
+    };
+
+    // DKAInitiation Component
+    const DKAInitiation = () => {
+      const [result, setResult] = useState('');
+      const inpArr = [
+        { label: 'الوزن (كجم)', type: 'number', name: 'bodyweight' },
+      ];
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setResult('');
+          return;
+        }
+        setResult(
+          Math.round(values.bodyweight / 10) >= 15
+            ? 15
+            : Math.round(values.bodyweight / 5) / 2
+        );
+      };
+
+      return (
+        <div className="tab-content" id="dka-initiation">
+          <div className="calculator-container">
+            <div id="inst">
+              <div className="instructions">إضافة 50 وحدة أنسولين + 50 مل محلول ملحي عادي</div>
+              <div className="instructions">قبل التوصيل، اغسل 20 مل من التسريب عبر جميع الأنابيب</div>
+              <div className="instructions">إعداد 500 مل من D10 في غرفة المريض</div>
+            </div>
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="بدء علاج DKA"
+              type="DKAInitiation"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: result ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-grid">
+                <div className="result-card">
+                  <span className="result-label">معدل الحقن (مل/ساعة):</span>
+                  <span className="result-value" style={{ color: 'var(--success-color)' }}>{result}</span>
+                </div>
+              </div>
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // DKAModification Component
+    const DKAModification = () => {
+      const [result, setResult] = useState('');
+      const [result2, setResult2] = useState('');
+      const inpArr = [
+        { label: 'الوزن (كجم)', type: 'number', name: 'bodyweight' },
+        { label: 'CBG السابق (ملغ%)', type: 'number', name: 'previouscbg', style: { color: 'red' } },
+        { label: 'CBG الحالي (ملغ%)', type: 'number', name: 'currentcbg' },
+        { label: 'المعدل الحالي (مل/ساعة)', type: 'number', name: 'currentrate' },
+      ];
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setResult('');
+          setResult2('');
+          return;
+        }
+        if (values.currentcbg < 100) {
+          setResult(
+            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 30 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملغ%، استأنف الأنسولين بمعدل ${Math.round(values.currentrate * 0.5)} مل/ساعة`
+          );
+          return;
+        }
+        if (values.currentcbg <= 250) {
+          const newRate = Math.floor(0.05 * values.bodyweight);
+          if (newRate > 15) {
+            setResult('المعدل الجديد أكبر من 15 مل/ساعة، يرجى التواصل مع الطبيب المختص');
+            if (values.currentcbg > 300) {
+              setResult2('فحص الأسيتون في البول');
+            }
+          } else {
+            setResult(`تقليل المعدل إلى ${newRate} مل/ساعة`);
+            setResult2('إضافة D10 بمعدل 125 مل/ساعة (ضبط معدل NaCl)');
+          }
+          return;
+        }
+        let diffCbg = values.currentcbg - values.previouscbg;
+        if (diffCbg > -50) {
+          const newRate = values.currentrate * 2;
+          if (newRate > 15) {
+            setResult('المعدل الجديد أكبر من 15 مل/ساعة، يرجى التواصل مع الطبيب المختص');
+            setResult2(values.currentcbg > 300 ? 'فحص الأسيتون في البول' : '');
+          } else {
+            setResult(`تعديل المعدل إلى ${newRate} مل/ساعة`);
+            setResult2('');
+          }
+        } else if (diffCbg > -100) {
+          setResult('لا تغيير');
+          setResult2('');
+        }
+      };
+
+      return (
+        <div className="tab-content" id="dka-modification">
+          <div className="calculator-container">
+            <div id="inst">
+              <div className="instructions">إضافة 50 وحدة أنسولين + 50 مل محلول ملحي عادي</div>
+              <div className="instructions">قبل التوصيل، اغسل 20 مل من التسريب عبر جميع الأنابيب</div>
+              <div className="instructions">إعداد 500 مل من D10 في غرفة المريض</div>
+            </div>
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="تعديل DKA"
+              type="DKAModification"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: result || result2 ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-text" style={{ color: 'var(--success-color)' }}>{result}</div>
+              {result2 && <div className="result-text" style={{ color: 'var(--success-color)' }}>{result2}</div>}
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // HICInitialization Component
+    const HICInitialization = () => {
+      const [initBResult, setInitBResult] = useState('');
+      const [initRResult, setInitRResult] = useState('');
+      const inpArr = [
+        { label: 'الوزن (كجم)', type: 'number', name: 'bodyweight' },
+        { label: 'الطول (سم)', type: 'number', name: 'height' },
+        {
+          label: 'الجنس',
+          type: 'radio',
+          name: 'gender',
+          radioOne: 'ذكر',
+          radioTwo: 'أنثى',
+        },
+      ];
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setInitBResult('');
+          setInitRResult('');
+          return;
+        }
+        const usedBodyWeight = () => {
+          let BMI = values.bodyweight / Math.pow(values.height / 100, 2);
+          let IBW =
+            values.gender === 'ذكر'
+              ? 50 + 2.3 * ((values.height - 152.4) * 0.393700787)
+              : 45.5 + 2.3 * ((values.height - 152.4) * 0.393700787);
+          return BMI < 30 ? values.bodyweight : 0.4 * (values.bodyweight - IBW) + IBW;
+        };
+        let usedBW = usedBodyWeight();
+        setInitBResult(Math.round((80 * usedBW / 100) / 5) * 5);
+        setInitRResult(Math.round(18 * usedBW / 100));
+      };
+
+      return (
+        <div className="tab-content" id="hic-initialization">
+          <div className="calculator-container">
+            <div id="inst">
+              <div className="instructions">إعداد الهيبارين بإضافة 5000 وحدة إلى 49 مل من المحلول الملحي العادي (100 وحدة/مل)</div>
+            </div>
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="بدء علاج الهيبارين"
+              type="HICInitialization"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: initBResult || initRResult ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-grid">
+                <div className="result-card">
+                  <span className="result-label">الجرعة الأولية (مل):</span>
+                  <span className="result-value" style={{ color: 'var(--success-color)' }}>{initBResult}</span>
+                </div>
+                <div className="result-card">
+                  <span className="result-label">المعدل الأولي (مل/ساعة):</span>
+                  <span className="result-value" style={{ color: 'var(--success-color)' }}>{initRResult}</span>
+                </div>
+              </div>
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // HICModification Component
+    const HICModification = () => {
+      const [extraBolusR, setExtraBolusR] = useState('');
+      const [changingRateR, setChangingRateR] = useState('');
+      const inpArr = [
+        { label: 'الوزن (كجم)', type: 'number', name: 'bodyweight' },
+        { label: 'الطول (سم)', type: 'number', name: 'height' },
+        { label: 'aPTT (ثانية)', type: 'number', name: 'aptt' },
+        { label: 'المعدل الحالي (مل/ساعة)', type: 'number', name: 'currentratee' },
+        {
+          label: 'الجنس',
+          type: 'radio',
+          name: 'gender',
+          radioOne: 'ذكر',
+          radioTwo: 'أنثى',
+        },
+      ];
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setExtraBolusR('');
+          setChangingRateR('');
+          return;
+        }
+        const usedBodyWeight = () => {
+          let BMI = values.bodyweight / Math.pow(values.height / 100, 2);
+          let IBW =
+            values.gender === 'ذكر'
+              ? 50 + 2.3 * ((values.height - 152.4) * 0.393700787)
+              : 45.5 + 2.3 * ((values.height - 152.4) * 0.393700787);
+          return BMI < 30 ? values.bodyweight : 0.4 * (values.bodyweight - IBW) + IBW;
+        };
+        let usedBW = usedBodyWeight();
+        let extraBolus = 0;
+        let changingRate = 0;
+        if (values.aptt < 35) {
+          extraBolus = 80 * usedBW / 100;
+          changingRate = Math.round(4 * Number(usedBW) / 100 + Number(values.currentratee));
+        } else if (values.aptt < 46) {
+          extraBolus = 40 * usedBW / 100;
+          changingRate = Math.round(2 * Number(usedBW) / 100 + Number(values.currentratee));
+        } else if (values.aptt < 71) {
+          changingRate = 'لا تغيير';
+        } else if (values.aptt < 91) {
+          changingRate = Math.round(Number(values.currentratee) - 2 * Number(usedBW) / 100);
+        } else {
+          changingRate = `إيقاف التسريب لمدة ساعة واحدة ثم استئناف بمعدل ${Math.round(Number(values.currentratee) - 3 * Number(usedBW) / 100)}`;
+        }
+        setExtraBolusR(`الجرعة الإضافية = ${Math.round(extraBolus / 5) * 5}`);
+        setChangingRateR(`تغيير المعدل = ${changingRate}`);
+      };
+
+      return (
+        <div className="tab-content" id="hic-modification">
+          <div className="calculator-container">
+            <div id="inst">
+              <div className="instructions">إعداد الهيبارين بإضافة 5000 وحدة إلى 49 مل من المحلول الملحي العادي (100 وحدة/مل)</div>
+            </div>
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="تعديل الهيبارين"
+              type="HICModification"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: extraBolusR || changingRateR ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-text" style={{ color: 'var(--success-color)' }}>{changingRateR}</div>
+              <div className="result-text" style={{ color: 'var(--success-color)' }}>{extraBolusR}</div>
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // IICInitiation Component
+    const IICInitiation = () => {
+      const [initbResult, setInitbResult] = useState('');
+      const [initrResult, setInitrResult] = useState('');
+      const [resultsElement, setResultsElement] = useState('');
+      const roundHalf = (num) => Math.round(num * 2) / 2;
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setInitbResult('');
+          setInitrResult('');
+          setResultsElement('');
+          return;
+        }
+        let x = roundHalf(values.currentcbg / 100);
+        if (values.currentcbg < 180) {
+          setInitbResult('غير متاح');
+          setInitrResult('غير متاح');
+          setResultsElement('');
+        } else if (values.currentcbg < 300) {
+          setInitrResult(x);
+          setInitbResult('غير متاح');
+          setResultsElement('');
+        } else {
+          setInitrResult(x);
+          setInitbResult(Math.floor(values.currentcbg / 100 / 0.5) * 0.5);
+          setResultsElement('فحص الأسيتون في البول');
+        }
+      };
+
+      const inpArr = [
+        { label: 'CBG الحالي (ملغ%)', type: 'number', name: 'currentcbg' },
+      ];
+
+      return (
+        <div className="tab-content" id="iic-initiation">
+          <div className="calculator-container">
+            <div id="inst">
+              <div className="instructions">بدء تسريب الأنسولين إذا كان أكثر من 180 ملغ/ديسيلتر في مريض السكري</div>
+              <div className="instructions">إضافة 50 وحدة أنسولين + 50 مل محلول ملحي عادي</div>
+              <div className="instructions">قبل التوصيل، اغسل 20 مل من التسريب عبر جميع الأنابيب</div>
+            </div>
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="بدء علاج الأنسولين (غير DKA)"
+              type="IICInitiation"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: initbResult || initrResult || resultsElement ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-grid">
+                <div className="result-card">
+                  <span className="result-label">الجرعة الأولية (مل):</span>
+                  <span className="result-value" style={{ color: 'var(--success-color)' }}>{initbResult}</span>
+                </div>
+                <div className="result-card">
+                  <span className="result-label">المعدل الأولي (مل/ساعة):</span>
+                  <span className="result-value" style={{ color: 'var(--success-color)' }}>{initrResult}</span>
+                </div>
+              </div>
+              {resultsElement && (
+                <div className="result-text" style={{ color: 'var(--success-color)' }}>{resultsElement}</div>
+              )}
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // IICMaintenance Component
+    const IICMaintenance = () => {
+      const [resultsElement, setResultsElement] = useState('');
+      const [resultsElement2, setResultsElement2] = useState('');
+      const roundHalf = (num) => Math.round(num * 2) / 2;
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setResultsElement('');
+          setResultsElement2('');
+          return;
+        }
+        const calculateDelta = () => {
+          let currentRateMaint = values.currentrate;
+          if (currentRateMaint < 3) return 0.5;
+          if (currentRateMaint < 6.5) return 1;
+          if (currentRateMaint < 10) return 1.5;
+          if (currentRateMaint < 15) return 2;
+          if (currentRateMaint < 20) return 3;
+          return 4;
+        };
+        const delta = roundHalf(calculateDelta());
+        const currCBG = values.currentcbg;
+        const prevCBG = values.previouscbg;
+        const currRate = values.currentrate;
+        let differenceCBG = currCBG - prevCBG;
+        let y = 0;
+        if (currCBG < 80) {
+          setResultsElement(
+            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 15 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملغ%، ${
+              currRate * 0.5 < 0.5
+                ? 'إبلاغ الطبيب المسؤول'
+                : `استأنف الأنسولين بمعدل ${Math.round(currRate * 0.5)} مل/ساعة`
+            }`
+          );
+        } else if (currCBG < 100) {
+          setResultsElement(
+            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 30 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملغ%، ${
+              currRate * 0.5 < 0.5
+                ? 'إبلاغ الطبيب المسؤول'
+                : `استأنف الأنسولين بمعدل ${Math.round(currRate * 0.5)} مل/ساعة`
+            }`
+          );
+        } else if (currCBG >= 100 && currCBG <= 139) {
+          if (differenceCBG > 0) {
+            setResultsElement('لا تغيير');
+          } else if (differenceCBG <= 0 && differenceCBG >= -20) {
+            y = Number(currRate) - delta;
+            setResultsElement(
+              y < 0.5 ? 'إبلاغ الطبيب المسؤول' : `تقليل المعدل إلى ${y} مل/ساعة`
+            );
+          } else {
+            setResultsElement(
+              `إيقاف الأنسولين -> CBG/30 دقيقة -> عندما يكون CBG > 140 ملغ/ديسيلتر -> ${
+                0.5 * currRate < 0.5
+                  ? 'إبلاغ الطبيب المسؤول'
+                  : `إعادة التشغيل بمعدل = ${roundHalf(0.5 * currRate)} مل/ساعة (إذا بدأ CBG في الزيادة، تحقق كل ساعة حتى > 140)`
+              }`
+            );
+          }
+        } else if (currCBG >= 140 && currCBG <= 159) {
+          if (differenceCBG > 40) {
+            y = Number(currRate) + delta;
+            setResultsElement(
+              y <= 20
+                ? `زيادة المعدل إلى ${y} مل/ساعة`
+                : 'المعدل الجديد أكبر من 20 مل/ساعة، يرجى التواصل مع الطبيب المختص'
+            );
+          } else if (differenceCBG >= -20) {
+            setResultsElement('لا تغيير');
+          } else if (differenceCBG >= -40) {
+            y = Number(currRate) - delta;
+            setResultsElement(
+              y < 0.5
+                ? 'إبلاغ الطبيب المسؤول'
+                : `تقليل المعدل إلى ${y} مل/ساعة`
+            );
+          } else {
+            y = Number(currRate) - 2 * delta;
+            setResultsElement(
+              `إيقاف الأنسولين، كرر CBG كل 30 دقيقة، عندما يبدأ في الزيادة وCBG >= 140 ${
+                y < 0.5 ? 'إبلاغ الطبيب المسؤول' : `إعادة التشغيل بمعدل = ${y} مل/ساعة`
+              }`
+            );
+          }
+        } else if (currCBG >= 160 && currCBG <= 200) {
+          if (differenceCBG > 60) {
+            y = Number(currRate) + 2 * delta;
+            setResultsElement(
+              y <= 20
+                ? `زيادة المعدل إلى ${y} مل/ساعة`
+                : 'المعدل الجديد أكبر من 20 مل/ساعة، يرجى التواصل مع الطبيب المختص'
+            );
+          } else if (differenceCBG >= 0) {
+            y = Number(currRate) + delta;
+            setResultsElement(
+              y <= 20
+                ? `زيادة المعدل إلى ${y} مل/ساعة`
+                : 'المعدل الجديد أكبر من 20 مل/ساعة، يرجى التواصل مع الطبيب المختص'
+            );
+          } else if (differenceCBG >= -40) {
+            setResultsElement('لا تغيير');
+          } else if (differenceCBG >= -60) {
+            y = Number(currRate) - delta;
+            setResultsElement(
+              y < 0.5
+                ? 'إبلاغ الطبيب المسؤول'
+                : `تقليل المعدل إلى ${y} مل/ساعة`
+            );
+          } else {
+            y = Number(currRate) - 2 * delta;
+            setResultsElement(
+              `إيقاف الأنسولين، كرر CBG كل 60 دقيقة، عندما يبدأ في الزيادة وCBG >= 140 ${
+                y < 0.5 ? 'إبلاغ الطبيب المسؤول' : `إعادة التشغيل بمعدل = ${y} مل/ساعة`
+              }`
+            );
+          }
+        } else {
+          if (differenceCBG > 0) {
+            y = Number(currRate) + 2 * delta;
+            setResultsElement(
+              y <= 20
+                ? `زيادة المعدل إلى ${y} مل/ساعة`
+                : 'المعدل الجديد أكبر من 20 مل/ساعة، يرجى التواصل مع الطبيب المختص'
+            );
+          } else if (differenceCBG >= -20) {
+            y = Number(currRate) + delta;
+            setResultsElement(
+              y <= 20
+                ? `زيادة المعدل إلى ${y} مل/ساعة`
+                : 'المعدل الجديد أكبر من 20 مل/ساعة، يرجى التواصل مع الطبيب المختص'
+            );
+          } else if (differenceCBG >= -60) {
+            setResultsElement('لا تغيير');
+          } else if (differenceCBG >= -80) {
+            y = Number(currRate) - delta;
+            setResultsElement(
+              y < 0.5
+                ? 'إبلاغ الطبيب المسؤول'
+                : `تقليل المعدل إلى ${y} مل/ساعة`
+            );
+          } else {
+            y = Number(currRate) - 2 * delta;
+            setResultsElement(
+              `إيقاف الأنسولين، كرر CBG كل 60 دقيقة، عندما يبدأ في الزيادة وCBG >= 140 ${
+                y < 0.5 ? 'إبلاغ الطبيب المسؤول' : `إعادة التشغيل بمعدل = ${y} مل/ساعة`
+              }`
+            );
+          }
+        }
+        if (currCBG > 300) {
+          setResultsElement2('فحص الأسيتون في البول');
+        }
+      };
+
+      const inpArr = [
+        { label: 'CBG السابق (ملغ%)', type: 'number', name: 'previouscbg', style: { color: 'red' } },
+        { label: 'CBG الحالي (ملغ%)', type: 'number', name: 'currentcbg' },
+        { label: 'المعدل الحالي (مل/ساعة)', type: 'number', name: 'currentrate' },
+      ];
+
+      return (
+        <div className="tab-content" id="iic-maintenance">
+          <div className="calculator-container">
+            <div id="inst">
+              <div className="instructions">بدء تسريب الأنسولين إذا كان أكثر من 180 ملغ/ديسيلتر في مريض السكري</div>
+              <div className="instructions">إضافة 50 وحدة أنسولين + 50 مل محلول ملحي عادي</div>
+              <div className="instructions">قبل التوصيل، اغسل 20 مل من التسريب عبر جميع الأنابيب</div>
+            </div>
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="صيانة الأنسولين (غير DKA)"
+              type="IICMaintenance"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: resultsElement || resultsElement2 ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-text" style={{ color: 'var(--success-color)' }}>{resultsElement}</div>
+              {resultsElement2 && (
+                <div className="result-text" style={{ color: 'var(--success-color)' }}>{resultsElement2}</div>
+              )}
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // Dropdown Component
+    const CalculatorDropdown = ({ title, items, activeTab, setActiveTab }) => {
+      const [isOpen, setIsOpen] = useState(false);
+
+      return (
+        <div className="dropdown relative">
+          <button
+            className="dropdown-toggle w-full text-right px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {title}
+            <svg
+              className={`ml-2 h-5 w-5 inline transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          {isOpen && (
+            <div className="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+              <div className="py-1">
+                {items.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`block w-full text-right px-4 py-2 text-sm ${activeTab === item.id ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // Main App Component
+    const App = () => {
+      const [activeTab, setActiveTab] = useState('hic-initialization');
+      
+      const calculators = [
+        {
+          title: 'حاسبة الهيبارين',
+          items: [
+            { id: 'hic-initialization', label: 'بداية العلاج' },
+            { id: 'hic-modification', label: 'تعديل الجرعة' }
+          ]
+        },
+        {
+          title: 'حاسبة الأنسولين (DKA)',
+          items: [
+            { id: 'dka-initiation', label: 'بداية العلاج' },
+            { id: 'dka-modification', label: 'تعديل الجرعة' }
+          ]
+        },
+        {
+          title: 'حاسبة الأنسولين (غير DKA)',
+          items: [
+            { id: 'iic-initiation', label: 'بداية العلاج' },
+            { id: 'iic-maintenance', label: 'تعديل الجرعة' }
+          ]
+        }
+      ];
+
+      // Function to show the active tab and hide others
+      const showActiveTab = (tabId) => {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+      };
+
+      // Update active tab when state changes
+      useEffect(() => {
+        showActiveTab(activeTab);
+      }, [activeTab]);
+
+      return (
+        <ErrorBoundary>
+          <div className="app-container">
+            <header className="app-header">
+              <div className="header-content">
+                <h1>مساعد الحقن الطبي</h1>
+                <p className="subtitle">أداة احترافية لحساب جرعات الأدوية بالتنقيط</p>
+              </div>
+            </header>
+            <nav className="tabs-container">
+              <div className="flex flex-wrap gap-4 p-4">
+                {calculators.map((calculator) => (
+                  <CalculatorDropdown
+                    key={calculator.title}
+                    title={calculator.title}
+                    items={calculator.items}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                  />
+                ))}
+              </div>
+            </nav>
+            <main className="content-area">
+              <HICInitialization />
+              <HICModification />
+              <IICInitiation />
+              <IICMaintenance />
+              <DKAInitiation />
+              <DKAModification />
+            </main>
+            <footer className="app-footer">
+              <div className="footer-content">
+                <p>© 2025 مساعد الحقن الطبي. جميع الحقوق محفوظة.</p>
+                <p className="version">الإصدار 1.0.0</p>
+              </div>
+            </footer>
+          </div>
+        </ErrorBoundary>
+      );
+    };
+
+    // Render the App
+    try {
+      ReactDOM.render(<App />, document.getElementById('root'));
+    } catch (error) {
+      console.error('Rendering error:', error);
+      document.getElementById('root').innerHTML = '<div class="text-danger-color text-center p-4">حدث خطأ في تحميل التطبيق، يرجى إعادة المحاولة</div>';
+    }
+  </script>
+</body>
+</html>
