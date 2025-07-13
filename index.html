@@ -694,11 +694,12 @@
       const [activeTab, setActiveTab] = useState('hic-initialization');
       
       const calculators = [
-        {
-          title: 'حاسبة الهيبارين',
+        
+           {
+          title: 'حاسبة الأنسولين (Non-DKA)',
           items: [
-            { id: 'hic-initialization', label: 'بداية العلاج' },
-            { id: 'hic-modification', label: 'تعديل الجرعة' }
+            { id: 'iic-initiation', label: 'بداية العلاج' },
+            { id: 'iic-maintenance', label: 'تعديل الجرعة' }
           ]
         },
         {
@@ -708,13 +709,16 @@
             { id: 'dka-modification', label: 'تعديل الجرعة' }
           ]
         },
-        {
-          title: 'حاسبة الأنسولين (غير DKA)',
+       {
+          
+          title: 'حاسبة الهيبارين',
           items: [
-            { id: 'iic-initiation', label: 'بداية العلاج' },
-            { id: 'iic-maintenance', label: 'تعديل الجرعة' }
+            { id: 'hic-initialization', label: 'بداية العلاج' },
+            { id: 'hic-modification', label: 'تعديل الجرعة' }
           ]
-        }
+        },
+        
+     
       ];
 
       // Function to show the active tab and hide others
