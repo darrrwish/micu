@@ -219,7 +219,9 @@ body {
   padding: 1.5rem;
   background-color: #f8f9fa;
   border-radius: var(--border-radius);
-  border-left: 4px solid var(--secondary-color);
+ /* border-right:  4px solid var(--secondary-color);*/
+    border:  2px dashed var(--secondary-color);
+  
 }
 
 .result-container h3 {
@@ -265,12 +267,16 @@ body {
 /* Disclaimer */
 .disclaimer {
   margin-top: 1.5rem;
-  padding: 1rem;
+  padding: 0.5rem;
   background-color: #fff8e1;
   border-radius: var(--border-radius);
   font-size: 0.85rem;
-  color: #e65100;
-  border-left: 4px solid #ffc107;
+  color: var(--warning-color);
+ /* border-right:   4px solid #ffc107;*/
+  
+  border: 2px dashed var(--warning-color);
+ /* border-right:  2px dashed var(--secondary-color);
+  border-left:  2px dashed var(--secondary-color);
 }
 
 /* Footer Styles */
@@ -406,4 +412,24 @@ body {
   .dropdown + .dropdown {
     margin-top: 0.5rem;
   }
+}
+
+
+/* أضف هذا لملف styles.css */
+.flex-col.gap-2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.flex.items-center.gap-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-text h4 {
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
 }
