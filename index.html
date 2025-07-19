@@ -118,6 +118,288 @@
       );
     };
 
+    // FluidFlowRate Component
+    const FluidFlowRate = () => {
+      const [result, setResult] = useState('');
+      const [timeValue, setTimeValue] = useState('');
+      
+      const inpArr = [
+        { label: 'إجمالي حجم السائل (مل)', type: 'number', name: 'volume' },
+        { 
+          label: 'نوع أنبوب التوصيل',
+          type: 'radio',
+          name: 'dropFactor',
+          radioOne: 'IV Set (15 قطرة/مل)',
+          radioTwo: 'Solu-set (60 قطرة/مل)',
+        },
+        { 
+          label: '',
+          type: 'radio',
+          name: 'dropFactor',
+          radioOne: 'Blood transfusion (10 قطرة/مل)',
+          radioTwo: 'أخرى (حدد عدد القطرات)',
+        },
+        { label: 'عدد القطرات/مل (إذا اخترت أخرى)', type: 'number', name: 'customDropFactor', placeholder: 'أدخل عدد القطرات لكل مل' },
+        { label: 'الوقت (ساعات)', type: 'number', name: 'time' },
+      ];
+
+      const handleSubmit = (values, errors) => {
+        if (errors) {
+          setResult('');
+          return;
+        }
+        
+        let dropFactor;
+        if (values.dropFactor === 'IV Set (15 قطرة/مل)') {
+          dropFactor = 15;
+        } else if (values.dropFactor === 'Solu-set (60 قطرة/مل)') {
+          dropFactor = 60;
+        } else if (values.dropFactor === 'Blood transfusion (10 قطرة/مل)') {
+          dropFactor = 10;
+          // تعيين الوقت تلقائيًا لـ 4 ساعات لنقل الدم
+          values.time = 4;
+          setTimeValue('4');
+        } else {
+          dropFactor = Number(values.customDropFactor) || 0;
+        }
+        
+        if (dropFactor <= 0) {
+          setResult('الرجاء إدخال قيمة صحيحة لعدد القطرات');
+          return;
+        }
+        
+        const dropsPerMinute = (values.volume * dropFactor) / (values.time * 60);
+        setResult(`اضبط المحلول على ${Math.round(dropsPerMinute)} قطرة/دقيقة`);
+      };
+
+      return (
+        <div className="tab-content" id="fluid-flow-rate">
+          <div className="calculator-container">
+            <MyForm
+              buttText="حساب"
+              inputArr={inpArr}
+              title="حاسبة معدل تدفق السوائل"
+              type="FluidFlowRate"
+              handleSub={handleSubmit}
+            />
+            <div className="result-container" style={{ display: result ? 'block' : 'none' }}>
+              <h3>النتائج:</h3>
+              <div className="result-grid">
+                <div className="result-card">
+                  <span className="result-label">معدل التدفق:</span>
+                  <span className="result-value" style={{ color: 'var(--success-color)' }}>{result}</span>
+                </div>
+              </div>
+              <div className="disclaimer">هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // BradenScore Component
+    const BradenScore = () => {
+      const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+      const [userAnswers, setUserAnswers] = useState({});
+      const [score, setScore] = useState(null);
+      const [riskLevel, setRiskLevel] = useState('');
+      const [instructions, setInstructions] = useState('');
+
+      const bradenQuestions = [
+        {
+          key: "sensory",
+          question: "1. إدراك الإحساس (Sensory Perception)",
+          options: [
+            { label: "فقدان كامل للإحساس", value: 1 },
+            { label: "محدود جدًا", value: 2 },
+            { label: "محدود قليلاً", value: 3 },
+            { label: "لا يوجد ضعف", value: 4 }
+          ]
+        },
+        {
+          key: "moisture",
+          question: "2. الرطوبة (Moisture)",
+          options: [
+            { label: "مبلل باستمرار", value: 1 },
+            { label: "غالبًا مبلل", value: 2 },
+            { label: "أحيانًا مبلل", value: 3 },
+            { label: "نادرًا ما يكون مبلل", value: 4 }
+          ]
+        },
+        {
+          key: "activity",
+          question: "3. النشاط (Activity)",
+          options: [
+            { label: "طريح الفراش", value: 1 },
+            { label: "على كرسي فقط", value: 2 },
+            { label: "يمشي أحيانًا", value: 3 },
+            { label: "يمشي بشكل متكرر", value: 4 }
+          ]
+        },
+        {
+          key: "mobility",
+          question: "4. الحركة (Mobility)",
+          options: [
+            { label: "غير قادر على الحركة تمامًا", value: 1 },
+            { label: "محدود جدًا", value: 2 },
+            { label: "محدود قليلاً", value: 3 },
+            { label: "لا يوجد قيود", value: 4 }
+          ]
+        },
+        {
+          key: "nutrition",
+          question: "5. التغذية (Nutrition)",
+          options: [
+            { label: "سيئة جدًا (محاليل فقط)", value: 1 },
+            { label: "غير كافية (أنبوب تغذية)", value: 2 },
+            { label: "كافية", value: 3 },
+            { label: "ممتازة", value: 4 }
+          ]
+        },
+        {
+          key: "friction",
+          question: "6. الاحتكاك والانزلاق (Friction & Shear)",
+          options: [
+            { label: "ينزلق ويتطلب مساعدة كبيرة", value: 1 },
+            { label: "يحتاج مساعدة بسيطة", value: 2 },
+            { label: "لا توجد مشكلة", value: 3 }
+          ]
+        }
+      ];
+
+      const handleAnswer = (value) => {
+        const currentQuestion = bradenQuestions[currentQuestionIndex];
+        const newAnswers = { ...userAnswers, [currentQuestion.key]: value };
+        setUserAnswers(newAnswers);
+
+        if (currentQuestionIndex < bradenQuestions.length - 1) {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        } else {
+          calculateScore(newAnswers);
+        }
+      };
+
+      const calculateScore = (answers) => {
+        const values = Object.values(answers);
+        const totalScore = values.reduce((sum, value) => sum + value, 0);
+        setScore(totalScore);
+
+        let risk = "";
+        let nursingInstructions = "";
+
+        if (totalScore <= 9) {
+          risk = "خطر شديد جدًا (Very High Risk)";
+          nursingInstructions = `
+            تعليمات تمريضية :
+            - قلب المريض كل ساعتين.
+            - استخدم مرتبة ضغط هواء (Air mattress).
+            - فحص الجلد يوميًا (كل بداية شفت).
+            - ترطيب الجلد واستخدام كريمات.
+          `;
+        } else if (totalScore <= 12) {
+          risk = "خطر شديد (High Risk)";
+          nursingInstructions = `
+             تعليمات تمريضية :
+            - قلب المريض كل 3 ساعات.
+            - راقب مناطق الضغط.
+            - الحفاظ على جفاف الجلد.
+            - تغذية جيدة.
+          `;
+        } else if (totalScore <= 14) {
+          risk = "خطر متوسط (Moderate Risk)";
+          nursingInstructions = `
+            تعليمات تمريضية :
+            - فحص الجلد عند كل بداية شفت تمريضي.
+            - استخدم وسادات ناعمة.
+            - تشجيع على الحركة إن أمكن.
+          `;
+        } else if (totalScore <= 18) {
+          risk = "خطر بسيط (At Risk)";
+          nursingInstructions = `
+            تعليمات تمريضية :
+            - تعليم المريض الحركة الذاتية.
+            - تقليل الرطوبة تحت المريض.
+            - فحص دوري لمناطق الضغط.
+          `;
+        } else {
+          risk = "لا يوجد خطر (No Risk)";
+          nursingInstructions = `
+             المريض لا يعاني من خطر قرح الفراش حاليًا.
+            - يُفضل المتابعة الدورية والوقاية الروتينية.
+          `;
+        }
+
+        setRiskLevel(risk);
+        setInstructions(nursingInstructions);
+      };
+
+      const resetCalculator = () => {
+        setCurrentQuestionIndex(0);
+        setUserAnswers({});
+        setScore(null);
+        setRiskLevel('');
+        setInstructions('');
+      };
+
+      return (
+        <div className="tab-content" id="braden-score">
+          <div className="calculator-container">
+            <h2>حاسبة Braden Score لتقييم قرح الفراش</h2>
+            
+            {score === null ? (
+              <>
+                <div className="form-group">
+                  <h3 className="text-lg font-semibold mb-4 text-primary-color">
+                    {bradenQuestions[currentQuestionIndex].question}
+                  </h3>
+                  <div className="space-y-3">
+                    {bradenQuestions[currentQuestionIndex].options.map((option, index) => (
+                      <button
+                        key={index}
+                        className="w-full text-right p-3 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                        onClick={() => handleAnswer(option.value)}
+                      >
+                        {option.label} ({option.value} نقطة)
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-4 text-gray-600">
+                  التقدم: {currentQuestionIndex + 1} / {bradenQuestions.length}
+                </div>
+              </>
+            ) : (
+              <div className="result-container">
+                <h3>النتائج:</h3>
+                <div className="result-grid">
+                  <div className="result-card">
+                    <span className="result-label">النتيجة الكلية:</span>
+                    <span className="result-value" style={{ color: 'var(--success-color)' }}>{score}</span>
+                  </div>
+                  <div className="result-card">
+                    <span className="result-label">مستوى الخطورة:</span>
+                    <span className="result-value" style={{ color: 'var(--success-color)' }}>{riskLevel}</span>
+                  </div>
+                </div>
+                <div className="result-text" style={{ whiteSpace: 'pre-line' }}>
+                  {instructions}
+                </div>
+                <button 
+                  onClick={resetCalculator}
+                  className="calculate-btn mt-4"
+                >
+                  إعادة الحساب
+                </button>
+                <div className="disclaimer">
+                  هذه النتائج لأغراض تعليمية فقط. يرجى مراجعة الطبيب قبل التطبيق.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
     // DKAInitiation Component
     const DKAInitiation = () => {
       const [result, setResult] = useState('');
@@ -173,8 +455,8 @@
       const [result2, setResult2] = useState('');
       const inpArr = [
         { label: 'الوزن (كجم)', type: 'number', name: 'bodyweight' },
-        { label: 'CBG السابق (ملغ%)', type: 'number', name: 'previouscbg', style: { color: 'red' } },
-        { label: 'CBG الحالي (ملغ%)', type: 'number', name: 'currentcbg' },
+        { label: 'CBG السابق (ملج%)', type: 'number', name: 'previouscbg', style: { color: 'red' } },
+        { label: 'CBG الحالي (ملج%)', type: 'number', name: 'currentcbg' },
         { label: 'المعدل الحالي (مل/ساعة)', type: 'number', name: 'currentrate' },
       ];
 
@@ -186,7 +468,7 @@
         }
         if (values.currentcbg < 100) {
           setResult(
-            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 30 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملغ%، استأنف الأنسولين بمعدل ${Math.round(values.currentrate * 0.5)} مل/ساعة`
+            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 30 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملج%، استأنف الأنسولين بمعدل ${Math.round(values.currentrate * 0.5)} مل/ساعة`
           );
           return;
         }
@@ -419,14 +701,14 @@
       };
 
       const inpArr = [
-        { label: 'CBG الحالي (ملغ%)', type: 'number', name: 'currentcbg' },
+        { label: 'CBG الحالي (ملج%)', type: 'number', name: 'currentcbg' },
       ];
 
       return (
         <div className="tab-content" id="iic-initiation">
           <div className="calculator-container">
             <div id="inst">
-              <div className="instructions">بدء تسريب الأنسولين إذا كان أكثر من 180 ملغ/ديسيلتر في مريض السكري</div>
+              <div className="instructions">بدء تسريب الأنسولين إذا كان أكثر من 180 ملج/ديسيلتر في مريض السكري</div>
               <div className="instructions">إضافة 50 وحدة أنسولين + 50 مل محلول ملحي عادي</div>
               <div className="instructions">قبل التوصيل، اغسل 20 مل من التسريب عبر جميع الأنابيب</div>
             </div>
@@ -488,7 +770,7 @@
         let y = 0;
         if (currCBG < 80) {
           setResultsElement(
-            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 15 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملغ%، ${
+            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 15 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملج%، ${
               currRate * 0.5 < 0.5
                 ? 'إبلاغ الطبيب المسؤول'
                 : `استأنف الأنسولين بمعدل ${Math.round(currRate * 0.5)} مل/ساعة`
@@ -496,7 +778,7 @@
           );
         } else if (currCBG < 100) {
           setResultsElement(
-            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 30 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملغ%، ${
+            `إيقاف الأنسولين وإعطاء 100 مل D10، إعادة الفحص كل 30 دقيقة، إعطاء 100 مل D10 مرة أخرى إذا كان لا يزال < 100. عندما يكون CBG > 140 ملج%، ${
               currRate * 0.5 < 0.5
                 ? 'إبلاغ الطبيب المسؤول'
                 : `استأنف الأنسولين بمعدل ${Math.round(currRate * 0.5)} مل/ساعة`
@@ -512,7 +794,7 @@
             );
           } else {
             setResultsElement(
-              `إيقاف الأنسولين -> CBG/30 دقيقة -> عندما يكون CBG > 140 ملغ/ديسيلتر -> ${
+              `إيقاف الأنسولين -> CBG/30 دقيقة -> عندما يكون CBG > 140 ملج/ديسيلتر -> ${
                 0.5 * currRate < 0.5
                   ? 'إبلاغ الطبيب المسؤول'
                   : `إعادة التشغيل بمعدل = ${roundHalf(0.5 * currRate)} مل/ساعة (إذا بدأ CBG في الزيادة، تحقق كل ساعة حتى > 140)`
@@ -615,8 +897,8 @@
       };
 
       const inpArr = [
-        { label: 'CBG السابق (ملغ%)', type: 'number', name: 'previouscbg', style: { color: 'red' } },
-        { label: 'CBG الحالي (ملغ%)', type: 'number', name: 'currentcbg' },
+        { label: 'CBG السابق (ملج%)', type: 'number', name: 'previouscbg', style: { color: 'red' } },
+        { label: 'CBG الحالي (ملج%)', type: 'number', name: 'currentcbg' },
         { label: 'المعدل الحالي (مل/ساعة)', type: 'number', name: 'currentrate' },
       ];
 
@@ -624,7 +906,7 @@
         <div className="tab-content" id="iic-maintenance">
           <div className="calculator-container">
             <div id="inst">
-              <div className="instructions">بدء تسريب الأنسولين إذا كان أكثر من 180 ملغ/ديسيلتر في مريض السكري</div>
+              <div className="instructions">بدء تسريب الأنسولين إذا كان أكثر من 180 ملج/ديسيلتر في مريض السكري</div>
               <div className="instructions">إضافة 50 وحدة أنسولين + 50 مل محلول ملحي عادي</div>
               <div className="instructions">قبل التوصيل، اغسل 20 مل من التسريب عبر جميع الأنابيب</div>
             </div>
@@ -716,6 +998,18 @@
             { id: 'hic-initialization', label: 'بداية العلاج' },
             { id: 'hic-modification', label: 'تعديل الجرعة' }
           ]
+        },
+        {
+          title: 'حاسبة قرح الفراش',
+          items: [
+            { id: 'braden-score', label: 'Braden Score' }
+          ]
+        },
+        {
+          title: 'حاسبة السوائل',
+          items: [
+            { id: 'fluid-flow-rate', label: 'معدل تدفق السوائل' }
+          ]
         }
       ];
 
@@ -776,6 +1070,8 @@
               <IICMaintenance />
               <DKAInitiation />
               <DKAModification />
+              <BradenScore />
+              <FluidFlowRate />
             </main>
             
             <footer className="app-footer">
