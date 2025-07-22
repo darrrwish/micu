@@ -43,7 +43,6 @@ body {
 
 .header-content h1 {
   font-size: 2rem;
-  margin-bottom: 0.5rem;
   font-weight: 700;
 }
 
@@ -302,11 +301,13 @@ body {
 /* Responsive Design */
 @media (max-width: 768px) {
   .app-header {
-    padding: 1rem;
+    padding: 0.5rem;
   }
   
   .header-content h1 {
     font-size: 1.5rem;
+    /*    font-size: 1rem;
+*/
   }
   
   .subtitle {
