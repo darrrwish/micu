@@ -972,6 +972,97 @@
       );
     };
 
+    // NewFeature Component
+const NewFeature = () => {
+  // تاريخ الإطلاق المخطط له (يمكن تعديله)
+  const launchDate = new Date("2025-09-30T00:00:00");
+  
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  const [isLaunched, setIsLaunched] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      const diff = launchDate - now;
+
+      if (diff <= 0) {
+        setIsLaunched(true);
+        clearInterval(timer);
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft({ days, hours, minutes, seconds });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="tab-content" id="new-feature">
+      <div className="calculator-container">
+        <h2>ميزة جديدة قريبًا</h2>
+        
+        {isLaunched ? (
+          <div className="coming-soon-banner">
+             الميزة الجديدة متاحة الآن! جاري التحميل...
+          </div>
+        ) : (
+          <>
+            <div className="coming-soon-banner">
+               جاري العمل على هذه الميزة، ستنطلق قريبًا!
+            </div>
+            
+            <div className="timer-container">
+              <div className="timer-box">
+                <div className="timer-value">{timeLeft.days}</div>
+                <div className="timer-label">أيام</div>
+              </div>
+              <div className="timer-box">
+                <div className="timer-value">{timeLeft.hours}</div>
+                <div className="timer-label">ساعات</div>
+              </div>
+              <div className="timer-box">
+                <div className="timer-value">{timeLeft.minutes}</div>
+                <div className="timer-label">دقائق</div>
+              </div>
+              <div className="timer-box">
+                <div className="timer-value">{timeLeft.seconds}</div>
+                <div className="timer-label">ثواني</div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="instructions">
+          <h4>حول هذه الميزة:</h4>
+          <p>
+            هذه الميزة ستكون حاسبة متقدمة لـ [حاسبة تحليل غازات الدم (ABG)]. نحن نعمل بجد لتقديمها بأفضل صورة.
+          </p>
+          <ul className="mr-4 mt-2" style={{ listStyleType: 'disc' }}>
+            <li>تحليل فوري للنتائج : [دخل قيم مثل pH، PaCO₂، HCO₃، وPaO₂، واحصل على التفسير الفسيولوجي للحالة]</li>
+            <li>تحديد نوع الاضطراب : [تمييز بين الاضطرابات الحادة والمزمنة، والتعويضات الجزئية أو الكاملة.]</li>
+            <li>واجهة سهلة الاستخدام : [تصميم بسيط يسمح بإدخال البيانات من أي جهاز بدون تعقيد.]</li>
+          </ul>
+        </div>
+
+        <div className="disclaimer">
+          يمكنك متابعة تحديثاتنا على وسائل التواصل الاجتماعي للاطلاع على آخر التطورات.
+        </div>
+      </div>
+    </div>
+  );
+};
     // Main App Component
     const App = () => {
       const [activeTab, setActiveTab] = useState('iic-initiation');
@@ -1010,7 +1101,12 @@
           items: [
             { id: 'fluid-flow-rate', label: 'معدل تدفق السوائل' }
           ]
-        }
+        },
+         {
+          title: 'غازات الدم',
+          items: [
+{ id: 'new-feature', label: 'ميزة جديدة', comingSoon: true }          ]
+        },
       ];
 
       // Function to show the active tab and hide others
@@ -1072,6 +1168,10 @@
               <DKAModification />
               <BradenScore />
               <FluidFlowRate />
+                            <NewFeature />
+
+                            
+
             </main>
             
             <footer className="app-footer">

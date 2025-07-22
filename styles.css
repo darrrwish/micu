@@ -433,3 +433,48 @@ body {
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
 }
+
+
+/* أضف هذا في ملف CSS الخاص بك */
+.focus\:ring-indigo-500:focus {
+  --tw-ring-color: var(--accent-color) !important;
+}
+
+/* Timer Styles */
+.timer-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.timer-box {
+  background: var(--primary-color);
+  color: white;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  min-width: 80px;
+  text-align: center;
+  box-shadow: var(--box-shadow);
+}
+
+.timer-value {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.timer-label {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.coming-soon-banner {
+  background: linear-gradient(135deg, var(--accent-color), #d4a017);
+  color: white;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  text-align: center;
+  margin: 1rem 0;
+  font-weight: bold;
+  box-shadow: var(--box-shadow);
+}
